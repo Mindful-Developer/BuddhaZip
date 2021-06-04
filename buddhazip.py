@@ -36,8 +36,14 @@ def zip_folder(source_path, destination_path, password):
     try:
         parent_folder = os.path.dirname(source_path)
         contents = os.walk(source_path)
-        with pyzipper.AESZipFile(destination_path + "\\", 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as z:
-            z.setpassword(password.encode())
+
+        if password:
+            z = pyzipper.AESZipFile(destination_path + "\\", 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES)
+            z.setpassword(password)
+        else:
+            z = pyzipper.ZipFile(destination_path + "\\", 'w', compression=pyzipper.ZIP_LZMA)
+
+        try:
             for root, folders, files in contents:
                 # Include all subfolders, including empty ones.
                 for folder_name in folders:
@@ -51,6 +57,15 @@ def zip_folder(source_path, destination_path, password):
                     print(f"Adding {absolute_path} to archive.")
                     z.write(absolute_path, relative_path)
             print(f"{destination_path} created successfully.")
+
+        except Exception:
+            tb = traceback.format_exc()
+            print("Something went wrong")
+            print(tb)
+
+        finally:
+            z.close()
+
     except Exception:
         tb = traceback.format_exc()
         print("Something went wrong")
@@ -69,15 +84,21 @@ def zip_single(source_path, destination_path, password):
             destination_path = destination_path.replace("." + suffix, '')
         destination_path += ".zip"
 
+    if password:
+        z = pyzipper.AESZipFile(destination_path, 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES)
+        z.setpassword(password)
+    else:
+        z = pyzipper.ZipFile(destination_path, 'w', compression=pyzipper.ZIP_LZMA)
+
     try:
-        with pyzipper.AESZipFile(destination_path, 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as z:
-            z.setpassword(password.encode())
-            z.write(source_path)
+        z.write(source_path)
         print(f"{destination_path} created successfully.")
     except Exception:
         tb = traceback.format_exc()
         print("Something went wrong")
         print(tb)
+    finally:
+        z.close()
 
 
 def unzip_item(source_path, destination_path, password):
@@ -96,7 +117,7 @@ def unzip_item(source_path, destination_path, password):
         with pyzipper.AESZipFile(source_path) as z:
             members = z.infolist()
             for i, member in enumerate(members):
-                z.extract(member, destination_path, pwd=password.encode())
+                z.extract(member, destination_path, pwd=password)
                 print(f"Unpacked {member.filename} from archive.")
         print(f"{source_path} unpacked successfully to {destination_path}.")
     except Exception:
@@ -116,7 +137,7 @@ if __name__ == "__main__":
     is_unzip = True if args.u else False
     source_arg = ' '.join(args.source) if args.source else ''
     destination_arg = ' '.join(args.destination) if args.destination else ''
-    password_arg = ' '.join(args.password) if args.password else None
+    password_arg = ' '.join(args.password).encode() if args.password else None
 
     if is_unzip and source_arg:
         if os.path.isfile(source_arg) and source_arg.endswith(".zip"):
