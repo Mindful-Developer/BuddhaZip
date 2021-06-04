@@ -12,3 +12,10 @@ This is an lzma zipper/unzipper to use in your CLI
     
       -d [DESTINATION ...], --destination [DESTINATION ...] - 
                             Destination folder path
+
+To-do
+
+    - add password capabilities
+    - remove inner folder when zipping
+    - add option for different zip types
+    - option to compress to multiple files
