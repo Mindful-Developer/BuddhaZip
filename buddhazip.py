@@ -1,4 +1,4 @@
-import zipfile
+import pyzipper
 import os
 import traceback
 import argparse
@@ -19,7 +19,7 @@ def motivational_quote():
     return random.choice(quotes)
 
 
-def zip_folder(source_path, destination_path):
+def zip_folder(source_path, destination_path, password):
     """Zip the contents of an entire folder (with that folder included
     in the archive). Empty subfolders will be included in the archive
     as well.
@@ -36,7 +36,8 @@ def zip_folder(source_path, destination_path):
     try:
         parent_folder = os.path.dirname(source_path)
         contents = os.walk(source_path)
-        with zipfile.ZipFile(destination_path + "\\", 'w', zipfile.ZIP_LZMA) as z:
+        with pyzipper.AESZipFile(destination_path + "\\", 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as z:
+            z.setpassword(password.encode())
             for root, folders, files in contents:
                 # Include all subfolders, including empty ones.
                 for folder_name in folders:
@@ -56,7 +57,7 @@ def zip_folder(source_path, destination_path):
         print(tb)
 
 
-def zip_single(source_path, destination_path):
+def zip_single(source_path, destination_path, password):
     """Zip a single file"""
 
     if not destination_path:
@@ -69,7 +70,8 @@ def zip_single(source_path, destination_path):
         destination_path += ".zip"
 
     try:
-        with zipfile.ZipFile(destination_path, 'w', zipfile.ZIP_LZMA) as z:
+        with pyzipper.AESZipFile(destination_path, 'w', compression=pyzipper.ZIP_LZMA, encryption=pyzipper.WZ_AES) as z:
+            z.setpassword(password.encode())
             z.write(source_path)
         print(f"{destination_path} created successfully.")
     except Exception:
@@ -78,7 +80,7 @@ def zip_single(source_path, destination_path):
         print(tb)
 
 
-def unzip_item(source_path, destination_path):
+def unzip_item(source_path, destination_path, password):
     """Unzip a file or folder"""
 
     if not destination_path:
@@ -91,10 +93,10 @@ def unzip_item(source_path, destination_path):
             os.makedirs(destination_path)
 
     try:
-        with zipfile.ZipFile(source_path) as z:
+        with pyzipper.AESZipFile(source_path) as z:
             members = z.infolist()
             for i, member in enumerate(members):
-                z.extract(member, destination_path)
+                z.extract(member, destination_path, pwd=password.encode())
                 print(f"Unpacked {member.filename} from archive.")
         print(f"{source_path} unpacked successfully to {destination_path}.")
     except Exception:
@@ -108,23 +110,25 @@ if __name__ == "__main__":
     parser.add_argument('-u', action="store_true", help="Unzip")
     parser.add_argument('source', nargs='*', help="Source file or folder path (Required)")
     parser.add_argument('-d', '--destination', nargs='*', help="Destination folder path")
+    parser.add_argument('-p', '--password', nargs='*', help="Zip password")
     args = parser.parse_args()
 
     is_unzip = True if args.u else False
     source_arg = ' '.join(args.source) if args.source else ''
     destination_arg = ' '.join(args.destination) if args.destination else ''
+    password_arg = ' '.join(args.password) if args.password else None
 
     if is_unzip and source_arg:
         if os.path.isfile(source_arg) and source_arg.endswith(".zip"):
-            unzip_item(source_arg, destination_arg)
+            unzip_item(source_arg, destination_arg, password_arg)
         else:
             print("Invalid file type in source path")
 
     elif source_arg:
         if os.path.isdir(source_arg):
-            zip_folder(source_arg, destination_arg)
+            zip_folder(source_arg, destination_arg, password_arg)
         elif os.path.isfile(source_arg):
-            zip_single(source_arg, destination_arg)
+            zip_single(source_arg, destination_arg, password_arg)
         else:
             print("Must be a valid source file or folder")
 
