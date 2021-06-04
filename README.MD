@@ -13,6 +13,8 @@ This is an lzma zipper/unzipper to use in your CLI
       -d [DESTINATION ...], --destination [DESTINATION ...] - 
                             Destination folder path
 
+      -p [PASSWORD ...], --password [PASSWORD ...] - set password
+
 To-do
 
     - remove inner folder when zipping
